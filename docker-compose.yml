@@ -2,21 +2,20 @@ version: '3.8'
 
 services:
   # Database Storage
-  postgres:
-    image: postgres:15-alpine
+  mysql:
+    image: mysql:8.0
     container_name: fulfilliq-db
     ports:
-      - "5432:5432"
+      - "3306:3306"
     environment:
-      POSTGRES_DB: fulfilliq
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      MYSQL_DATABASE: fulfilliq
+      MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mysqldata:/var/lib/mysql
       - ./init-db:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -76,7 +75,7 @@ services:
     environment:
       JWT_SECRET: c3VwZXItc2VjcmV0LWtleS1zaG91bGQtYmUtYXQtbGVhc3QtMjU2LWJpdHMtbG9uZy1mb3Itc2hhMjU2
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
 
   auth-service:
@@ -85,14 +84,14 @@ services:
     ports:
       - "8081:8081"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: mysql
+      DB_PORT: 3306
       DB_NAME: fulfilliq
-      DB_USER: postgres
-      DB_PASS: postgres
+      DB_USER: root
+      DB_PASS: rootpassword
       JWT_SECRET: c3VwZXItc2VjcmV0LWtleS1zaG91bGQtYmUtYXQtbGVhc3QtMjU2LWJpdHMtbG9uZy1mb3Itc2hhMjU2
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
 
   warehouse-service:
@@ -101,13 +100,13 @@ services:
     ports:
       - "8082:8082"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: mysql
+      DB_PORT: 3306
       DB_NAME: fulfilliq
-      DB_USER: postgres
-      DB_PASS: postgres
+      DB_USER: root
+      DB_PASS: rootpassword
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
 
   inventory-service:
@@ -116,16 +115,16 @@ services:
     ports:
       - "8083:8083"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: mysql
+      DB_PORT: 3306
       DB_NAME: fulfilliq
-      DB_USER: postgres
-      DB_PASS: postgres
+      DB_USER: root
+      DB_PASS: rootpassword
       REDIS_HOST: redis
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -138,16 +137,16 @@ services:
     ports:
       - "8084:8084"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: mysql
+      DB_PORT: 3306
       DB_NAME: fulfilliq
-      DB_USER: postgres
-      DB_PASS: postgres
+      DB_USER: root
+      DB_PASS: rootpassword
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       WAREHOUSE_SERVICE_URL: http://warehouse-service:8082
       INVENTORY_SERVICE_URL: http://inventory-service:8083
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -162,14 +161,14 @@ services:
     ports:
       - "8085:8085"
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_HOST: mysql
+      DB_PORT: 3306
       DB_NAME: fulfilliq
-      DB_USER: postgres
-      DB_PASS: postgres
+      DB_USER: root
+      DB_PASS: rootpassword
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -195,4 +194,4 @@ services:
       - gateway-service
 
 volumes:
-  pgdata:
+  mysqldata:
